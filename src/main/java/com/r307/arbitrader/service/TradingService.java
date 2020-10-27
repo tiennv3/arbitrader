@@ -2,6 +2,7 @@ package com.r307.arbitrader.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.r307.arbitrader.DecimalConstants;
+import com.r307.arbitrader.config.ExchangeConfiguration;
 import com.r307.arbitrader.config.TradingConfiguration;
 import com.r307.arbitrader.exception.OrderNotFoundException;
 import com.r307.arbitrader.service.model.ActivePosition;
@@ -160,6 +161,9 @@ public class TradingService {
                 LOGGER.debug("{} home currency: {}",
                         exchange.getExchangeSpecification().getExchangeName(),
                         exchangeService.getExchangeHomeCurrency(exchange));
+                LOGGER.info("{} fee computation: {}",
+                        exchange.getExchangeSpecification().getExchangeName(),
+                        exchangeService.getExchangeMetadata(exchange).getFeeComputation());
                 LOGGER.info("{} balance: {}{}",
                         exchange.getExchangeSpecification().getExchangeName(),
                     exchangeService.getExchangeHomeCurrency(exchange).getSymbol(),
@@ -494,6 +498,20 @@ public class TradingService {
             activePosition.getShortTrade().getOrderId(),
             activePosition.getShortTrade().getVolume());
 
+        if (exchangeService
+            .getExchangeMetadata(spread.getLongExchange())
+            .getFeeComputation() == ExchangeConfiguration.FeeComputation.ADDED) {
+
+            longVolume = longVolume.subtract(longVolume.multiply(getExchangeFee(spread.getLongExchange(), spread.getCurrencyPair(), true)));
+        }
+
+        if (exchangeService
+            .getExchangeMetadata(spread.getShortExchange())
+            .getFeeComputation() == ExchangeConfiguration.FeeComputation.ADDED) {
+
+            shortVolume = shortVolume.subtract(shortVolume.multiply(getExchangeFee(spread.getShortExchange(), spread.getCurrencyPair(), true)));
+        }
+
         LOGGER.debug("Volumes: {}/{}", longVolume, shortVolume);
 
         BigDecimal longLimitPrice;
@@ -503,7 +521,7 @@ public class TradingService {
             longLimitPrice = getLimitPrice(spread.getLongExchange(), spread.getCurrencyPair(), longVolume, Order.OrderType.BID);
             shortLimitPrice = getLimitPrice(spread.getShortExchange(), spread.getCurrencyPair(), shortVolume, Order.OrderType.ASK);
         } catch (ExchangeException e) {
-            LOGGER.warn("Failed to fetch order books (on active position) for {}/{} and currency {}/{} to compute entry prices: {}",
+            LOGGER.warn("Failed to fetch order books (on active position) for {}/{} and currency {}/{} to compute exit prices: {}",
                 longExchangeName,
                 spread.getShortExchange().getDefaultExchangeSpecification().getExchangeName(),
                 spread.getCurrencyPair().base,

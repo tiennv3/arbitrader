@@ -10,6 +10,11 @@ import java.util.List;
 import java.util.Map;
 
 public class ExchangeConfiguration {
+    public enum FeeComputation {
+        ADDED,
+        INCLUDED
+    }
+
     private String exchangeClass;
     private String userName;
     private String apiKey;
@@ -23,6 +28,7 @@ public class ExchangeConfiguration {
     private List<CurrencyPair> marginExclude = new ArrayList<>();
     private BigDecimal fee;
     private BigDecimal feeOverride;
+    private FeeComputation feeComputation = FeeComputation.INCLUDED;
     private Currency homeCurrency = Currency.USD;
     private Map<String, Integer> ticker = new HashMap<>();
 
@@ -128,6 +134,14 @@ public class ExchangeConfiguration {
 
     public void setFeeOverride(BigDecimal feeOverride) {
         this.feeOverride = feeOverride;
+    }
+
+    public FeeComputation getFeeComputation() {
+        return feeComputation;
+    }
+
+    public void setFeeComputation(FeeComputation feeComputation) {
+        this.feeComputation = feeComputation;
     }
 
     public Currency getHomeCurrency() {
